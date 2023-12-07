@@ -26,35 +26,28 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const errorUrl = await rl.question("Enter the error URL: ");
-let code = "";
-const parts = errorUrl.split("?");
-for (let part of parts) {
-  if (part.includes("code=")) {
-    code = part.slice(5, part.indexOf("&", 5));
-  }
-}
+const code = await rl.question("Enter the code in URL: ");
 
 console.log("code: " + code);
 
-oauth2Client.getToken(code, (err, tokens) => {
-  if (err) {
-    console.error("Error getting tokens:", err);
-    console.error("Error data:", err.response?.data);
-    process.exit(1);
-  } else {
-    const filePath = "tokens.json";
+if (code == "") {
+  console.log("CODE EMPTY...");
+  process.exit(1);
+}
 
-    // Check if the file already exists
-    if (fs.existsSync(filePath)) {
-      // If it exists, overwrite it
-      fs.writeFileSync(filePath, JSON.stringify(tokens));
-      console.log("Tokens overwritten in tokens.json");
-    } else {
-      // If it doesn't exist, create a new file
-      fs.writeFileSync(filePath, JSON.stringify(tokens));
-      console.log("Tokens saved to tokens.json");
-    }
-    process.exit(0);
+try {
+  const tokens = await oauth2Client.getToken(code);
+  const filePath = "tokens.json";
+
+  if (fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, JSON.stringify(tokens.tokens));
+    console.log("Tokens overwritten in tokens.json");
+  } else {
+    fs.writeFileSync(filePath, JSON.stringify(tokens.tokens));
+    console.log("Tokens saved to tokens.json");
   }
-});
+  process.exit(0);
+} catch (err) {
+  console.error("Error getting tokens:", err);
+  process.exit(1);
+}
